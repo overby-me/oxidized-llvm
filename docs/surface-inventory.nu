@@ -1,5 +1,5 @@
 #!/usr/bin/env nu
-# Measures the surface rust/llvm has to implement, from the backend that will
+# Measures the surface safety/oxidized/llvm has to implement, from the backend that will
 # consume it.
 #
 #   nu surface-inventory.nu <path-to-rustc_codegen_llvm>

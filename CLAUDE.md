@@ -32,7 +32,7 @@ Violating one of these is a correctness bug, not a style disagreement.
 | **Opaque pointers only.** Typed-pointer IR (`i8*`) is rejected, not silently accepted. | PLAN §1.2. Half-supporting a dead dialect costs more than refusing it. |
 | **Every claim in STATUS.md is measured.** "Works", "complete", "supported" require a check that passes. Otherwise write "unmeasured" or "partial". | fe-c's rule, and it is the only thing that keeps a multi-year project honest. |
 | **Everything builds and tests through nix.** Cargo is for iteration; a feature is not done until its check is wired and green. | Repo convention. |
-| **Library crates stay dependency-free and stable-Rust for as long as that is free.** Adding a crate means a `nix/lib/cargo/index` commit; adding nightly means a toolchain pin. Both are fine when a tier needs them, neither is free. | PLAN §11 lists vendored-index friction as a live risk, and today the whole workspace builds with zero third-party crates. |
+| **Library crates stay dependency-free and stable-Rust for as long as that is free.** Adding a crate means a `platform/nix/lib/cargo/index` commit; adding nightly means a toolchain pin. Both are fine when a tier needs them, neither is free. | PLAN §11 lists vendored-index friction as a live risk, and today the whole workspace builds with zero third-party crates. |
 
 ## 3. Settled, do not re-open
 
@@ -77,7 +77,7 @@ says `[todo]` is a bug in this file.
 Flakelight module, flake import, `llvm-fmt`, `llvm-clippy`, `llvm-unit`
 checks, all three building. The cargo-check harness needs no vendor
 directory because the workspace has no third-party dependencies; when that
-changes, copy rust/fe-c's `vendorFor`.
+changes, copy safety/fe-c's `vendorFor`.
 
 **A2. [done] `llvm-support`: APInt, APFloat, DataLayout, Triple.** *(2026-07-26)*
 Acceptance: unit tests including APInt cross-checked against `u128`/`i128`
@@ -2978,12 +2978,12 @@ is `[todo]`.
   `nix build .#checks.x86_64-linux.llvm-<name>` before claiming anything.
 - The corpus regenerates with `nu corpus/regen.nu` (needs `rustc` on PATH). It
   is committed, so a check never shells out to rustc.
-- Commit style: `feat(rust/llvm): ...`, one scope per commit, no co-author
+- Commit style: `feat(safety/oxidized/llvm): ...`, one scope per commit, no co-author
   trailers, and run `rtk jj diff --stat` before writing the message.
 - Before committing Rust: `cargo fmt`, then
   `cargo clippy --workspace --all-targets -- -D warnings`. The pre-commit hooks
   run both and the abort-retry cycle is slower than doing it first.
-- `deslop scan rust/llvm` catches AI-slop patterns; `.deslop.toml` records the
+- `deslop scan safety/oxidized/llvm` catches AI-slop patterns; `.deslop.toml` records the
   rules that are disabled and why. Run it *before* the nix checks rather than
   at commit time: a finding blocks the commit, and the fix for one is a source
   change, which invalidates every check derivation and costs the whole run

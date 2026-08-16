@@ -1,8 +1,8 @@
-# rust/llvm — LLVM-compatible compiler infrastructure written in Rust
+# safety/oxidized/llvm — LLVM-compatible compiler infrastructure written in Rust
 
-> Plan of record for `rust/llvm` in `tangled.org/overby.me/overby.me`.
-> Drop this file in as `rust/llvm/PLAN.md`. Companion docs to create alongside it,
-> following the `rust/fe-c` conventions: `README.md`, `STATUS.md`, `CLAUDE.md`,
+> Plan of record for `safety/oxidized/llvm` in `tangled.org/overby.me/overby.me`.
+> Drop this file in as `safety/oxidized/llvm/PLAN.md`. Companion docs to create alongside it,
+> following the `safety/fe-c` conventions: `README.md`, `STATUS.md`, `CLAUDE.md`,
 > `docs/`, `corpus/`, `default.nix`, `rust-toolchain.toml`.
 
 ## 0. Summary and headline decisions
@@ -14,13 +14,13 @@ the **LLVM IR level** (textual `.ll` now, bitcode `.bc` later) and eventually at
 
 **How rustc consumes it (the investigated question):** neither a brand-new backend
 nor untouched reuse, but a **fork of `rustc_codegen_llvm` living inside this
-project** as a nightly-pinned crate, de-FFI'd to call rust/llvm's native Rust API,
+project** as a nightly-pinned crate, de-FFI'd to call safety/oxidized/llvm's native Rust API,
 loaded into stock nightly rustc via `-Zcodegen-backend=…/librustc_codegen_llvmrs.so`.
 Later, once the surface is broad enough, the *unmodified* in-tree
 `rustc_codegen_llvm` becomes a conformance target via an exported C-ABI shim
 (`LLVM*`/`LLVMRust*` symbols + a fake `llvm-config`). Rationale in §2.4.
 
-**Placement:** one project at `rust/llvm/` (multi-crate workspace, `rust/fe-c`
+**Placement:** one project at `safety/oxidized/llvm/` (multi-crate workspace, `safety/fe-c`
 layout), not two projects. The rustc backend crate versions in lockstep with the IR
 library and shares its toolchain pin; splitting it out buys nothing until an
 external consumer needs an independent release cadence. Rationale in §2.5.
@@ -28,23 +28,23 @@ external consumer needs an independent release cadence. Rationale in §2.5.
 **Honesty up front:** upstream LLVM's core is millions of lines of C++ refined over
 20+ years. Even scoped to "what rustc exercises", this is a multi-year effort. The
 plan is structured so that every tier ships something independently useful to this
-monorepo (§8), the way rust/gcc already does for rust/nixpkgs.
+monorepo (§8), the way safety/oxidized/gcc already does for safety/oxidized/nixpkgs.
 
 ## 1. Goal and non-goals
 
 ### 1.1 Goals
 
-1. A pure-Rust codegen path for rustc: `rustc → rust/llvm → object files → wild`,
-   with `rust/libc` (Eyra lineage) underneath — closing the last big 💣 in the
+1. A pure-Rust codegen path for rustc: `rustc → safety/oxidized/llvm → object files → wild`,
+   with `safety/oxidized/libc` (Eyra lineage) underneath — closing the last big 💣 in the
    monorepo's toolchain row ("Compiler Framework: MLIR/LLVM 💣").
 2. LLVM IR compatibility: parse and print the textual IR of the LLVM major that
    the pinned rustc release uses, with verifier-equivalent semantics, so real
    `opt`/`llc`/`clang` remain available as differential-testing oracles.
 3. Correctness as the product: differential testing, translation validation, and
    fuzzing are first-class deliverables, not afterthoughts (§7).
-4. Eventually a drop-in `llvmPackages`-shaped attribute for rust/nixpkgs
+4. Eventually a drop-in `llvmPackages`-shaped attribute for safety/oxidized/nixpkgs
    (`opt`, `llc`, `llvm-as`, `llvm-dis` binaries with compatible CLI subsets),
-   mirroring how rust/gcc presents itself as `gcc`/`cc`.
+   mirroring how safety/oxidized/gcc presents itself as `gcc`/`cc`.
 
 ### 1.2 Non-goals (explicit, to keep the project survivable)
 
@@ -97,13 +97,13 @@ monorepo (§8), the way rust/gcc already does for rust/nixpkgs.
   the Bytecode Alliance `filecheck` crate, wild (linker, already ✅ in this
   repo), and Trail of Bits' Mollusc crates (`llvm-bitstream`/`llvm-mapper`,
   pure-Rust bitcode *reading* — evaluate before writing our own reader).
-- **Adjacent in-repo assets:** rust/gcc (based on Anthropic's ccc) already
+- **Adjacent in-repo assets:** safety/oxidized/gcc (based on Anthropic's ccc) already
   contains working x86-64/i686/ARM64/RISC-V code emission, a built-in assembler,
-  and a built-in linker; rust/binutils exists; rust/libc is the Eyra-lineage
+  and a built-in linker; safety/oxidized/binutils exists; safety/oxidized/libc is the Eyra-lineage
   substrate; krabby (tracked in the README R&D column) is a from-scratch fast
   Rust *frontend* experiment with no codegen — complementary, not overlapping.
 
-### 2.2 Option analysis: how should rustc talk to rust/llvm?
+### 2.2 Option analysis: how should rustc talk to safety/oxidized/llvm?
 
 **Option A — C-ABI substitution under unmodified rustc.** Implement the exact
 `extern "C"` surface rustc links (`LLVM*` C API subset + every `LLVMRust*`
@@ -123,7 +123,7 @@ safe calls into `llvm-ir`.
 *Pros:* incremental from day one (stub everything, `todo!()` on untouched paths,
 grow coverage test-by-test); works with stock rustup nightly; follows the proven
 cg_clif/cg_gcc out-of-tree development model; the fork's call sites *are* the
-scope specification for rust/llvm.
+scope specification for safety/oxidized/llvm.
 *Cons:* tracking rustc nightly churn (mitigated by the Kani model already used in
 fe-c: one pinned nightly in `rust-toolchain.toml`, bumped by pipeline); requires
 `rustc_private`.
@@ -194,7 +194,7 @@ The fork's FFI call sites define v1 scope precisely. Inventory to encode in
 ### 4.1 Directory layout (fe-c conventions)
 
 ```text
-rust/llvm/
+safety/oxidized/llvm/
 ├── Cargo.toml            # workspace
 ├── Cargo.lock
 ├── rust-toolchain.toml   # one pinned nightly (Kani/fe-c model)
@@ -202,7 +202,7 @@ rust/llvm/
 ├── README.md  PLAN.md  STATUS.md  CLAUDE.md  .deslop.toml
 ├── docs/                 # surface-inventory, design records, evaluations
 ├── corpus/               # .ll conformance corpus + vendored LLVM tests
-├── nix/                  # project-local nix helpers (oracle pins, check harness)
+├── platform/nix/                  # project-local nix helpers (oracle pins, check harness)
 └── crates/
     ├── llvm-support      # APInt/APFloat, DataLayout, Triple (target-lexicon)
     ├── llvm-ir           # Context/Module/Value/Type/Instr, attrs, metadata, verifier
@@ -249,7 +249,7 @@ rust/llvm/
 because it is proven in Rust, but consuming LLVM IR and keeping room for
 machine-level peepholes. Inline asm requires a real per-target assembler in
 `llvm-mc`; x86 leans on iced-x86's encoder, aarch64 gets hand-built encode
-tables (evaluate lifting rust/gcc's ARM64 emitter, §10).
+tables (evaluate lifting safety/oxidized/gcc's ARM64 emitter, §10).
 
 ### 4.4 Optimization tier (T2) philosophy
 
@@ -263,7 +263,7 @@ pattern lands with an Alive2-checked `.ll` pair in `corpus/`.
 ## 5. Dependency policy
 
 Rule: never rewrite what the Rust ecosystem already does well; everything must be
-pure Rust and vendorable into `nix/lib/cargo/index`.
+pure Rust and vendorable into `platform/nix/lib/cargo/index`.
 
 | Use | Crate | Notes |
 | --- | --- | --- |
@@ -279,7 +279,7 @@ pure Rust and vendorable into `nix/lib/cargo/index`.
 
 Real LLVM (`opt`, `llc`, `clang`, `alive2`) appears **only** in test-oracle nix
 checks, never as a build or runtime dependency of any package output — same
-separation rust/gcc keeps with real gcc.
+separation safety/oxidized/gcc keeps with real gcc.
 
 ## 6. rustc integration mechanics
 
@@ -297,7 +297,7 @@ separation rust/gcc keeps with real gcc.
 4. Consumption: `RUSTFLAGS="-Zcodegen-backend=$(nix build …)/lib/librustc_codegen_llvmrs.so"`
    or `CARGO_PROFILE_DEV_CODEGEN_BACKEND` — identical UX to cg_clif.
 5. Distribution inside the monorepo: a wrapper package `rust-llvm-rustc` that
-   pairs the dylib with its exact matching nightly, so rust/nixpkgs can consume
+   pairs the dylib with its exact matching nightly, so safety/oxidized/nixpkgs can consume
    it as one coherent toolchain.
 
 ### 6.2 Conformance path (Option A, grown behind B)
@@ -335,7 +335,7 @@ one pinned nightly; no attempt to keep pace with every nightly.
      execution-diff, never chase their asm CHECK lines.
    - *Whole-program, verbatim:* the separate `llvm-test-suite` repo
      (compile-and-run, output-compared) — the direct analog of running GNU's
-     testsuite against rust/sed, and a straight conformance target.
+     testsuite against safety/oxidized/sed, and a straight conformance target.
    All vendored under `corpus/upstream/` (Apache-2.0 WITH LLVM-exception
    headers kept), driven by the Rust `filecheck` crate and a small lit-style
    runner in `llvm-tools`.
@@ -351,9 +351,9 @@ one pinned nightly; no attempt to keep pace with every nightly.
 5. **rustc testsuite.** The fork's north star: `tests/ui` + `tests/codegen` +
    run-pass under `-Zcodegen-backend`, pass-rate ratcheted in CI (never
    decreases). Then crater-style runs over the monorepo's own rust/* projects —
-   a uniquely good in-house corpus (build rust/grep, rust/sed, wild itself…).
+   a uniquely good in-house corpus (build safety/oxidized/grep, safety/oxidized/sed, wild itself…).
 6. **Fuzzing.** rustlantis (MIR-level differential fuzzing cg_llvm vs llvmrs);
-   csmith+creduce via rust/gcc once it can target llvmrs IR (§10); IR-level
+   csmith+creduce via safety/oxidized/gcc once it can target llvmrs IR (§10); IR-level
    structured fuzzing of parser/verifier/passes with cargo-fuzz.
 7. **Execution differential in CI:** every green tier keeps a check that builds
    a pinned set of real programs with both backends and diffs observable
@@ -384,8 +384,8 @@ forbidden repo-wide as usual.
 - rustc `tests/ui` pass rate ≥ 95% at O0 on x86_64-linux; abi-cafe green.
 - Monorepo dogfood: at least five sibling `rust/*` projects build and pass
   their own checks with `-Zcodegen-backend=llvmrs`.
-- **This tier already delivers the headline:** rustc + rust/llvm + wild +
-  rust/libc = an all-Rust debug-build toolchain, before any optimizer exists.
+- **This tier already delivers the headline:** rustc + safety/oxidized/llvm + wild +
+  safety/oxidized/libc = an all-Rust debug-build toolchain, before any optimizer exists.
 
 ### T2 — Optimizing tier
 
@@ -413,12 +413,12 @@ forbidden repo-wide as usual.
 
 - Option A: stock rustc builds against `llvm-c-abi` + shim `llvm-config`,
   testsuite green ⇒ fully bootstrapped pure-Rust rustc.
-- rust/nixpkgs exposes `llvmPackages_rs`; monorepo README flips the Compiler
+- safety/oxidized/nixpkgs exposes `llvmPackages_rs`; monorepo README flips the Compiler
   Framework row from 💣 to 🦀.
 
 ## 9. Nix and monorepo integration
 
-### 9.1 `rust/llvm/default.nix` (flakelight module, rust/gcc + fe-c pattern)
+### 9.1 `safety/oxidized/llvm/default.nix` (flakelight module, safety/oxidized/gcc + fe-c pattern)
 
 ```nix
 {
@@ -435,10 +435,10 @@ forbidden repo-wide as usual.
         ];
       };
 
-      index = ../../nix/lib/cargo/index;
+      index = ../../platform/nix/lib/cargo/index;
 
       rootAttrs.postInstall = ''
-        # Upstream-compatible tool names, like rust/gcc does for gcc/cc
+        # Upstream-compatible tool names, like safety/oxidized/gcc does for gcc/cc
         ln -s $out/bin/opt $out/bin/opt-rs
         ln -s $out/bin/llc $out/bin/llc-rs
       '';
@@ -461,11 +461,11 @@ forbidden repo-wide as usual.
 
 ### 9.2 Wiring checklist
 
-- `flake.nix`: add `./rust/llvm` to `imports`, alphabetically between
-  `./rust/help2man` and `./rust/make` (note: `rust/libc` exists in-tree but is
+- `flake.nix`: add `./safety/oxidized/llvm` to `imports`, alphabetically between
+  `./safety/oxidized/help2man` and `./safety/oxidized/make` (note: `safety/oxidized/libc` exists in-tree but is
   deliberately not in the imports list today — don't cargo-cult that; llvm
   ships packages and checks, so it belongs in the list).
-- `nix/lib/cargo/index`: add `regalloc2`, `object`, `gimli`, `target-lexicon`,
+- `platform/nix/lib/cargo/index`: add `regalloc2`, `object`, `gimli`, `target-lexicon`,
   `cranelift-isle`, `iced-x86`, `filecheck`, Mollusc crates, `hashbrown`,
   `smallvec`, `indexmap`, `rayon` (+ transitive closure). Do this as its own
   commit — the index is the known landmine field.
@@ -482,24 +482,24 @@ forbidden repo-wide as usual.
   - 🦀 Systems → Compiler Framework row: add
     `[LLVM-rs 🦀](…/rust/llvm)` under Research & Development next to Cranelift
     and Krabby; move to Current when T2 lands.
-- Commits: `feat(rust/llvm): …` conventional style, `Signed-off-by`, jj-native.
+- Commits: `feat(safety/oxidized/llvm): …` conventional style, `Signed-off-by`, jj-native.
 - Project files: `CLAUDE.md` (hard rules + the ranked `llvmrs-todo` queue from
   §6.1), `STATUS.md` (tier, pass rates, oracle/nightly pins), `.deslop.toml`.
 
 ## 10. Relationship to sibling projects
 
-- **rust/gcc**: has working x86-64/i686/ARM64/RISC-V emitters, an assembler and
+- **safety/oxidized/gcc**: has working x86-64/i686/ARM64/RISC-V emitters, an assembler and
   a linker (ccc lineage). Two moves to evaluate at T1: (a) lift its ARM64/RISC-V
-  encoders into shared crates under rust/llvm, (b) longer-term, retarget
-  rust/gcc's frontend at `llvm-ir`, making it the clang-analog and doubling our
+  encoders into shared crates under safety/oxidized/llvm, (b) longer-term, retarget
+  safety/oxidized/gcc's frontend at `llvm-ir`, making it the clang-analog and doubling our
   frontend test pressure (unlocks csmith differential fuzzing for free).
-- **rust/binutils + wild**: wild links our output from T0; rust/binutils
+- **safety/oxidized/binutils + wild**: wild links our output from T0; safety/oxidized/binutils
   provides objdump-alike tools for debugging emitted objects.
-- **rust/libc**: the substrate that makes "pure Rust" mean whole-process, same
+- **safety/oxidized/libc**: the substrate that makes "pure Rust" mean whole-process, same
   as fe-c's pairing.
-- **rust/nixpkgs**: consumer of the T1 toolchain bundle and the T5
+- **safety/oxidized/nixpkgs**: consumer of the T1 toolchain bundle and the T5
   `llvmPackages_rs`.
-- **mojo/**: MLIR compat is the only path to serving Mojo; out of scope through
+- **dev/mojo/**: MLIR compat is the only path to serving Mojo; out of scope through
   T3, tracked as a possible post-T5 direction.
 - **krabby**: if it ever wants codegen, `llvm-ir` is a natural target; no
   coupling planned.
@@ -523,7 +523,7 @@ forbidden repo-wide as usual.
 
 - Project license: **Apache-2.0 WITH LLVM-exception** (upstream-compatible, so
   `corpus/upstream/` vendoring and any future two-way flow are clean). This
-  diverges deliberately from rust/gcc's CC0 — vendored LLVM tests and the
+  diverges deliberately from safety/oxidized/gcc's CC0 — vendored LLVM tests and the
   vendored `rustc_codegen_llvm` (MIT/Apache-2.0) can't be CC0.
 - `crates/rustc-codegen-llvmrs` keeps rustc's MIT/Apache-2.0 headers;
   `corpus/upstream/` keeps LLVM's headers; everything is arm's-length clean-room
@@ -531,7 +531,7 @@ forbidden repo-wide as usual.
 
 ## 13. First two weeks (concrete)
 
-1. Scaffold `rust/llvm/` per §4.1; land the flakelight module + flake import +
+1. Scaffold `safety/oxidized/llvm/` per §4.1; land the flakelight module + flake import +
    cargo-index additions as three separate commits; `llvm-fmt`/`llvm-clippy`/
    `llvm-unit` checks green in Spindle.
 2. Vendor `rustc_codegen_llvm` at the pinned nightly; make it *compile* against

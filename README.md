@@ -6,7 +6,7 @@ LLVM-compatible compiler infrastructure written in Rust. Compatible at the
 LLVM that rustc actually uses", not all of `llvm-project`.
 
 The end state is a pure-Rust codegen path for rustc:
-`rustc -> rust/llvm -> object files -> wild`, with `rust/libc` underneath.
+`rustc -> safety/oxidized/llvm -> object files -> wild`, with `safety/oxidized/libc` underneath.
 [PLAN.md](./PLAN.md) is the plan of record; [STATUS.md](./STATUS.md) is the
 honest account of what exists right now.
 

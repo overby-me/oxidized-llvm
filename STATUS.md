@@ -1,7 +1,7 @@
 # Status
 
 What exists, what is a stub, and what claim is *not* being made yet. Written in
-the register [rust/fe-c](../fe-c/STATUS.md) uses: a sentence here is either
+the register [safety/fe-c](../fe-c/STATUS.md) uses: a sentence here is either
 backed by a check that passes or is marked unmeasured.
 
 **Last updated:** 2026-08-16.
@@ -14,7 +14,7 @@ backed by a check that passes or is marked unmeasured.
 | IR dialect | LLVM 21 | The major that `nixpkgs.llvm` (21.1.8) and the repo's rustc both speak. Older dialects are refused, not half-supported. |
 | Oracle LLVM | `pkgs.llvm` 21.1.8 | Test-only, inside check derivations. Never a build or runtime dependency of any package output. |
 | Rust toolchain | stable, whatever the devshell ships (1.95 today) | No `rust-toolchain.toml` yet on purpose: nothing here needs nightly. The pin arrives with `crates/rustc-codegen-llvmrs` (task B5), which needs `rustc_private`. |
-| Third-party crates | none | The whole workspace has zero dependencies, so there is nothing to add to `nix/lib/cargo/index` yet. |
+| Third-party crates | none | The whole workspace has zero dependencies, so there is nothing to add to `platform/nix/lib/cargo/index` yet. |
 
 ## What works
 
